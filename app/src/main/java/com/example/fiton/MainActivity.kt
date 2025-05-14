@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import com.example.fiton.ui.theme.FitOnTheme
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.example.fiton.data.ExerciseDbHelper
 import com.example.fiton.navigation.AppNavHost
 
 
@@ -23,6 +24,9 @@ class MainActivity : ComponentActivity() {
 
         // Forzar iconos blancos en la barra de estado
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = false
+
+        val dbHelper = ExerciseDbHelper(this)
+        val db = dbHelper.writableDatabase
 
         setContent {
             FitOnTheme {

@@ -284,7 +284,7 @@ fun MuscleGroupItem(muscle: MuscleGroup, navController: NavController) {
     ) {
         Box(
             modifier = Modifier
-                .size(100.dp) // Tamaño fijo
+                .size(120.dp) // Tamaño fijo
                 .background(Color.Gray) // Opcional, para ver el área ocupada
         ) {
             Image(
