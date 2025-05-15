@@ -20,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,6 +40,8 @@ import coil.request.ImageRequest
 import com.example.fiton.R
 import com.example.fiton.data.Exercise
 import com.example.fiton.data.ExerciseRepository
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Photo
 
 data class MuscleGroup(val imageResId: Int, val name: String)
 
@@ -254,14 +255,13 @@ fun EditExerciseScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
                         ) {
                             Icon(
-                                imageVector = Icons.Default.CheckCircle,
+                                imageVector = Icons.Default.Photo,
                                 contentDescription = "Cambiar imagen",
                                 modifier = Modifier.padding(end = 4.dp),
                                 tint = Color.White
 
                             )
                             Text("Cambiar", color = Color.White)
-
                         }
 
                         Button(
@@ -271,7 +271,12 @@ fun EditExerciseScreen(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                         ) {
-                            Text("Eliminar imagen", color = Color.White)
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Cambiar imagen",
+                                modifier = Modifier.padding(end = 4.dp),
+                                tint = Color.White
+                            )
                         }
                     }
                 } else {
@@ -315,7 +320,12 @@ fun EditExerciseScreen(
                 containerColor = Color.Red,
                 modifier = Modifier.width(80.dp)
             ) {
-                Text("Eliminar", color = Color.White)
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Cambiar imagen",
+                    modifier = Modifier.padding(end = 4.dp),
+                    tint = Color.White
+                )
             }
 
             FloatingActionButton(

@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.fiton.R
@@ -53,8 +52,7 @@ fun ExercisesScreen(
             ) {
                 Text(
                     text = "Ejercicios para $muscleGroup",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontSize = 24.sp
+                    style = MaterialTheme.typography.headlineMedium,
                 )
             }
 
@@ -102,14 +100,7 @@ fun ExercisesScreen(
         // Botón Agregar
         FloatingActionButton(
             onClick = {
-                repository.insert(
-                    Exercise(
-                        name = "Plancha",
-                        description = "Mantener posición firme con el abdomen contraído",
-                        muscleGroup = muscleGroup
-                    )
-                )
-                exercises = repository.getAll()
+                navController.navigate("create_exercise_screen/${muscleGroup}")
             },
             containerColor = Color(0xFFFF9800),
             modifier = Modifier
@@ -149,7 +140,7 @@ fun ExerciseCard(exercise: Exercise, onClick: (Long) -> Unit) {
                 painter = painter,
                 contentDescription = "Imagen del ejercicio",
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .padding(end = 16.dp)
             )
             Column(
