@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -22,6 +23,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.fiton.R
 import com.example.fiton.data.Exercise
 import com.example.fiton.data.ExerciseRepository
+import java.io.File
 
 @Composable
 fun ExercisesScreen(
@@ -37,39 +39,78 @@ fun ExercisesScreen(
         exercises = repository.getAll()
     }
 
-    Box(
+    Scaffold(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Título
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        floatingActionButton = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 36.dp),
-                horizontalArrangement = Arrangement.Center
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Ejercicios para $muscleGroup",
-                    style = MaterialTheme.typography.headlineMedium,
-                )
-            }
+                // Botón Volver
+                FloatingActionButton(
+                    onClick = { navController.popBackStack() },
+                    containerColor = Color(0xFFFF9800),
+                    modifier = Modifier.width(80.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = Color.White
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                // Botón Agregar
+                FloatingActionButton(
+                    onClick = {
+                        navController.navigate("create_exercise_screen/${muscleGroup}")
+                    },
+                    containerColor = Color(0xFFFF9800),
+                    modifier = Modifier.width(80.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Agregar ejercicio",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            // Título centrado
+            Text(
+                text = "Ejercicios para $muscleGroup",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                textAlign = TextAlign.Center
+            )
 
             // Lista scrollable
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 80.dp), // deja espacio para los botones flotantes
+                    .padding(bottom = 16.dp), // espacio reducido ya que los FAB están en Scaffold
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val filteredExercises = exercises.filter { it.muscleGroup == muscleGroup }
 
                 if (filteredExercises.isEmpty()) {
                     item {
-                        Text("No hay ejercicios registrados para este grupo muscular.")
+                        Text(
+                            "No hay ejercicios registrados para este grupo muscular.",
+                            modifier = Modifier.padding(16.dp)
+                        )
                     }
                 } else {
                     items(filteredExercises.size) { index ->
@@ -81,46 +122,27 @@ fun ExercisesScreen(
                 }
             }
         }
-
-        // Botón Volver
-        FloatingActionButton(
-            onClick = { navController.popBackStack() },
-            containerColor = Color(0xFFFF9800),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Volver",
-                tint = Color.White
-            )
-        }
-
-        // Botón Agregar
-        FloatingActionButton(
-            onClick = {
-                navController.navigate("create_exercise_screen/${muscleGroup}")
-            },
-            containerColor = Color(0xFFFF9800),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Agregar ejercicio",
-                tint = Color.White
-            )
-        }
     }
 }
 
 @Composable
 fun ExerciseCard(exercise: Exercise, onClick: (Long) -> Unit) {
-    val painter: Painter = if (!exercise.imageUri.isNullOrEmpty()) {
-        rememberAsyncImagePainter(exercise.imageUri)
+    val context = LocalContext.current
+
+    // Verificar que la URI no sea nula y que el archivo exista
+    val imageExists = remember(exercise.imageUri) {
+        !exercise.imageUri.isNullOrEmpty() && File(exercise.imageUri).exists()
+    }
+
+    // Usar un pintor que maneje correctamente la carga de imágenes locales
+    val painter: Painter = if (imageExists) {
+        // Usar File directamente para imágenes en almacenamiento interno
+        val imageFile = File(exercise.imageUri!!)
+        // Log para depuración
+        println("Cargando imagen desde: ${imageFile.absolutePath} (Existe: ${imageFile.exists()})")
+        rememberAsyncImagePainter(model = imageFile)
     } else {
+        // Imagen por defecto
         painterResource(id = R.drawable.ic_launcher_foreground)
     }
 
@@ -157,4 +179,3 @@ fun ExerciseCard(exercise: Exercise, onClick: (Long) -> Unit) {
         }
     }
 }
-

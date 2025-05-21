@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,14 +38,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.example.fiton.R
 import com.example.fiton.data.Exercise
 import com.example.fiton.data.ExerciseRepository
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Photo
-
-data class MuscleGroup(val imageResId: Int, val name: String)
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,8 +59,12 @@ fun EditExerciseScreen(
     var description by remember { mutableStateOf("") }
     var muscleGroup by remember { mutableStateOf("") }
 
-    var imageSource by rememberSaveable { mutableStateOf("") }
+    // Para mantener la ruta interna de la imagen
+    var imagePath by rememberSaveable { mutableStateOf<String?>(null) }
     var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+
+    // Para saber si hemos cambiado la imagen
+    var imageChanged by rememberSaveable { mutableStateOf(false) }
 
     val muscleGroups = listOf(
         MuscleGroup(R.drawable.pecho, "Pecho").name,
@@ -84,7 +86,16 @@ fun EditExerciseScreen(
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 imageUri = uri
-                imageSource = uri.toString()
+                imageChanged = true
+
+                // Copiar la imagen al almacenamiento interno
+                val internalPath = copyImageToInternalStorage(context, uri)
+                if (internalPath != null) {
+                    imagePath = internalPath
+                    println("Nueva imagen copiada a: $internalPath")
+                } else {
+                    Toast.makeText(context, "Error al copiar imagen", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -124,8 +135,16 @@ fun EditExerciseScreen(
             muscleGroup = loaded.muscleGroup
 
             if (!loaded.imageUri.isNullOrEmpty()) {
-                imageSource = loaded.imageUri!!
-                imageUri = Uri.parse(imageSource)
+                imagePath = loaded.imageUri
+                // Verificar si el archivo existe
+                val file = File(loaded.imageUri!!)
+                if (file.exists()) {
+                    println("Imagen existente encontrada en: ${loaded.imageUri}")
+                    imageUri = Uri.fromFile(file)
+                } else {
+                    println("Advertencia: La imagen no existe en la ruta: ${loaded.imageUri}")
+                    // No establecer imageUri si el archivo no existe
+                }
             }
         }
     }
@@ -147,10 +166,10 @@ fun EditExerciseScreen(
         Text(
             text = "Editar Ejercicio",
             style = MaterialTheme.typography.headlineMedium,
-            fontSize = 24.sp,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 36.dp),
+                .statusBarsPadding()
+                .navigationBarsPadding(),
             textAlign = TextAlign.Center
         )
 
@@ -212,7 +231,7 @@ fun EditExerciseScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -221,7 +240,7 @@ fun EditExerciseScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                if (imageUri != null && imageSource.isNotEmpty()) {
+                if (imageUri != null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -230,10 +249,12 @@ fun EditExerciseScreen(
                     ) {
                         Image(
                             painter = rememberAsyncImagePainter(
-                                model = ImageRequest.Builder(context)
-                                    .data(imageUri)
-                                    .crossfade(true)
-                                    .build()
+                                model = if (imageChanged) {
+                                    imageUri // URI directa si es una imagen nueva
+                                } else {
+                                    // Para imágenes existentes, usar File
+                                    File(imagePath!!)
+                                }
                             ),
                             contentDescription = "Imagen del ejercicio",
                             modifier = Modifier
@@ -259,24 +280,25 @@ fun EditExerciseScreen(
                                 contentDescription = "Cambiar imagen",
                                 modifier = Modifier.padding(end = 4.dp),
                                 tint = Color.White
-
                             )
                             Text("Cambiar", color = Color.White)
                         }
 
                         Button(
                             onClick = {
-                                imageSource = ""
+                                imagePath = null
                                 imageUri = null
+                                imageChanged = true
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Cambiar imagen",
+                                contentDescription = "Eliminar imagen",
                                 modifier = Modifier.padding(end = 4.dp),
                                 tint = Color.White
                             )
+                            Text("Eliminar", color = Color.White)
                         }
                     }
                 } else {
@@ -322,23 +344,32 @@ fun EditExerciseScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Cambiar imagen",
-                    modifier = Modifier.padding(end = 4.dp),
+                    contentDescription = "Eliminar ejercicio",
                     tint = Color.White
                 )
             }
 
             FloatingActionButton(
                 onClick = {
+                    // Verificar que si hay imagen, exista el archivo
+                    if (imagePath != null) {
+                        val file = File(imagePath!!)
+                        if (!file.exists()) {
+                            Toast.makeText(context, "Error: La imagen no se guardó correctamente", Toast.LENGTH_SHORT).show()
+                            return@FloatingActionButton
+                        }
+                    }
+
                     repository.update(
                         Exercise(
                             id = exerciseId,
                             name = name,
                             description = description,
                             muscleGroup = muscleGroup,
-                            imageUri = if (imageUri != null && imageSource.isNotEmpty()) imageSource else null
+                            imageUri = imagePath
                         )
                     )
+                    Toast.makeText(context, "Ejercicio actualizado correctamente", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 },
                 containerColor = Color(0xFFFF9800),
@@ -372,6 +403,18 @@ fun EditExerciseScreen(
                     ) {
                         Button(
                             onClick = {
+                                // Si hay una imagen asociada, intenta eliminarla
+                                if (!exercise?.imageUri.isNullOrEmpty()) {
+                                    try {
+                                        val file = File(exercise?.imageUri!!)
+                                        if (file.exists()) {
+                                            file.delete()
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+
                                 repository.delete(exerciseId)
                                 Toast.makeText(context, "Ejercicio eliminado con éxito", Toast.LENGTH_SHORT).show()
                                 navController.popBackStack()

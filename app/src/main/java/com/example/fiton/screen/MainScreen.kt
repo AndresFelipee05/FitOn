@@ -37,10 +37,30 @@ fun <T> List<T>.chunkedByThree(): List<List<T>> {
 @Composable
 fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
     val tips = listOf(
-        TipData(R.drawable.agua, "Hidratación", "El cuerpo necesita suficiente agua para regular la temperatura y llevar nutrientes.", "https://fundaciondelcorazon.com/blog-impulso-vital/2275-hidratacion-ejercicio-fisico.html"),
-        TipData(R.drawable.calentar, "Calentamiento", "Calentar prepara las articulaciones y músculos para moverse con seguridad y eficacia.", "https://medlineplus.gov/spanish/ency/patientinstructions/000859.htm"),
-        TipData(R.drawable.comer, "Alimentación", "Comer bien te da energía para rendir mejor y recuperarte más rápido después del ejercicio.", "https://www.alianzateam.com/pilares-de-dieta-balanceada/"),
-        TipData(R.drawable.descansar, "Recuperación", "El descanso es esencial para que el cuerpo repare tejidos, evite lesiones y mejore el rendimiento.", "https://cienciasdeportivas.com/descanso-para-deportistas/")
+        TipData(
+            R.drawable.agua,
+            "Hidratación",
+            "El cuerpo necesita suficiente agua para regular la temperatura y llevar nutrientes.",
+            "https://fundaciondelcorazon.com/blog-impulso-vital/2275-hidratacion-ejercicio-fisico.html"
+        ),
+        TipData(
+            R.drawable.calentar,
+            "Calentamiento",
+            "Calentar prepara las articulaciones y músculos para moverse con seguridad y eficacia.",
+            "https://medlineplus.gov/spanish/ency/patientinstructions/000859.htm"
+        ),
+        TipData(
+            R.drawable.comer,
+            "Alimentación",
+            "Comer bien te da energía para rendir mejor y recuperarte más rápido después del ejercicio.",
+            "https://www.alianzateam.com/pilares-de-dieta-balanceada/"
+        ),
+        TipData(
+            R.drawable.descansar,
+            "Recuperación",
+            "El descanso es esencial para que el cuerpo repare tejidos, evite lesiones y mejore el rendimiento.",
+            "https://cienciasdeportivas.com/descanso-para-deportistas/"
+        )
     )
 
     val muscleGroups = listOf(
@@ -73,7 +93,9 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp, top = 20.dp)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(8.dp)
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -113,7 +135,8 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
                             shape = CircleShape
                         )
                         .clickable {
-                            val basePage = pagerState.currentPage - (pagerState.currentPage % realPageCount)
+                            val basePage =
+                                pagerState.currentPage - (pagerState.currentPage % realPageCount)
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(basePage + index)
                             }
@@ -124,7 +147,7 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
 
         Text(
             text = "Grupos musculares",
-            fontSize = 20.sp,
+            fontSize = 26.sp,
             color = Color.White,
             modifier = Modifier.padding(start = 16.dp, top = 20.dp)
         )
@@ -156,7 +179,7 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             FloatingActionButton(
-                onClick = { /* Acción del botón Crear rutina */ },
+                onClick = { navController.navigate("create_routine_screen") },
                 containerColor = Color(0xFFFF9800),
                 modifier = Modifier
                     .width(110.dp)
@@ -168,12 +191,25 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(16.dp))
 
             FloatingActionButton(
+                onClick = { navController.navigate("routines_screen") },
+                containerColor = Color(0xFFFF9800),
+                modifier = Modifier
+                    .width(110.dp)
+                    .height(60.dp)
+            ) {
+                Text(text = "Modificar rutina", color = Color.White)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            FloatingActionButton(
                 onClick = {
                     navController.navigate("search")
                 },
                 containerColor = Color(0xFFFF9800),
                 modifier = Modifier
-                    .size(56.dp) // Tamaño estándar FAB cuadrado
+                    .width(80.dp)
+                    .height(60.dp)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Search,
@@ -210,7 +246,7 @@ fun FitnessTipSlide(imageResId: Int, titulo: String, tip: String, link: String) 
 
             Text(
                 text = tip,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 color = Color(0xFFD6D6D6),
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -228,7 +264,7 @@ fun FitnessTipSlide(imageResId: Int, titulo: String, tip: String, link: String) 
         ) {
             Text(
                 text = titulo,
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 color = Color.White,
                 modifier = Modifier.padding(end = 50.dp)
             )
@@ -273,7 +309,7 @@ fun MuscleGroupItem(muscle: MuscleGroup, navController: NavController) {
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = muscle.name,
-            fontSize = 16.sp,
+            fontSize = 20.sp,
             color = Color.White
         )
     }
