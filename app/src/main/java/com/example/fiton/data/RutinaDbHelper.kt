@@ -2,7 +2,6 @@ package com.example.fiton.data
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Build
@@ -61,6 +60,15 @@ class RutinaDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         db.execSQL(createRutinasTable)
         db.execSQL(createRutinaEjerciciosTable)
+    }
+
+    // Añadir este método para habilitar las restricciones de clave foránea
+    override fun onOpen(db: SQLiteDatabase) {
+        super.onOpen(db)
+        // Habilitar la restricción de clave foránea
+        if (!db.isReadOnly) {
+            db.execSQL("PRAGMA foreign_keys=ON")
+        }
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
