@@ -83,7 +83,7 @@ fun EditRoutineScreen(
 
                 Button(
                     onClick = { showDeleteDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.White)
                 }
@@ -91,20 +91,24 @@ fun EditRoutineScreen(
                 Button(
                     onClick = {
                         rutina?.let {
+                            // Actualizar la información básica de la rutina
                             rutinaRepository.actualizarRutina(it.id, nombre, it.fecha.dayOfWeek.value, fecha)
 
-                            ejercicios.forEach {
-                                if (!ejerciciosEliminados.contains(it.ejercicioId)) {
+                            // Actualizar cada ejercicio de la rutina que no haya sido eliminado
+                            ejercicios.forEach { ejercicio ->
+                                if (!ejerciciosEliminados.contains(ejercicio.ejercicioId)) {
+                                    // Usar el método correcto para actualizar el ejercicio
                                     rutinaRepository.actualizarEjercicioDeRutina(
-                                        it.rutinaId,
-                                        it.ejercicioId,
-                                        it.series,
-                                        it.repeticiones,
-                                        it.anotaciones
+                                        ejercicio.id,  // Usar el ID del registro de la tabla intermedia
+                                        ejercicio.repeticiones,
+                                        ejercicio.series,
+                                        ejercicio.peso,
+                                        ejercicio.anotaciones
                                     )
                                 }
                             }
 
+                            // Eliminar los ejercicios marcados para eliminación
                             ejerciciosEliminados.forEach { ejercicioId ->
                                 rutinaRepository.eliminarEjercicioDeRutina(rutina!!.id, ejercicioId)
                             }
@@ -178,6 +182,7 @@ fun EditRoutineScreen(
 
                     var repeticiones by remember { mutableStateOf(ejercicio.repeticiones.toString()) }
                     var series by remember { mutableStateOf(ejercicio.series.toString()) }
+                    var peso by remember { mutableStateOf(ejercicio.peso.toString()) }
                     var anotaciones by remember { mutableStateOf(ejercicio.anotaciones ?: "") }
                     val ejercicioInfo = exerciseRepository.getById(ejercicio.ejercicioId)
 
@@ -233,6 +238,21 @@ fun EditRoutineScreen(
                                 }
 
                                 TextField(
+                                    value = peso,
+                                    onValueChange = {
+                                        peso = it
+                                        val newWeight = it.toDoubleOrNull() ?: 0.0
+                                        ejercicios = ejercicios.toMutableList().also { list ->
+                                            list[index] = list[index].copy(peso = newWeight)
+                                        }
+                                    },
+                                    label = { Text("Peso (kg)") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isEliminado,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                )
+
+                                TextField(
                                     value = anotaciones,
                                     onValueChange = {
                                         anotaciones = it
@@ -271,7 +291,6 @@ fun EditRoutineScreen(
             CircularProgressIndicator()
         }
 
-        // Dialogo de confirmación para eliminar rutina
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },

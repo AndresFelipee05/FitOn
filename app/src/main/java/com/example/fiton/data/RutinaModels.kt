@@ -17,6 +17,7 @@ class RutinaModels {
         val ejercicioId: Long,        // FK al ejercicio que está en tu base de datos de ejercicios
         val repeticiones: Int,
         val series: Int,
+        val peso: Double = 0.0,
         val anotaciones: String? = null
     )
 }

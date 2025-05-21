@@ -8,87 +8,121 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.os.Build
 import androidx.annotation.RequiresApi
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
-class RutinaDbHelper(context: Context) :
-    SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class RutinaDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+
+    companion object {
+        private const val DATABASE_NAME = "fiton_rutinas.db"
+        private const val DATABASE_VERSION = 1
+
+        // Tabla Rutinas
+        private const val TABLE_RUTINAS = "rutinas"
+        private const val COL_RUTINA_ID = "id"
+        private const val COL_RUTINA_NOMBRE = "nombre"
+        private const val COL_RUTINA_DIA_SEMANA = "dia_semana"
+        private const val COL_RUTINA_FECHA = "fecha"
+
+        // Tabla Rutina_Ejercicios (tabla relacional)
+        private const val TABLE_RUTINA_EJERCICIOS = "rutina_ejercicios"
+        private const val COL_RUTINA_EJERCICIO_ID = "id"
+        private const val COL_RUTINA_EJERCICIO_RUTINA_ID = "rutina_id"
+        private const val COL_RUTINA_EJERCICIO_EJERCICIO_ID = "ejercicio_id"
+        private const val COL_RUTINA_EJERCICIO_REPETICIONES = "repeticiones"
+        private const val COL_RUTINA_EJERCICIO_SERIES = "series"
+        private const val COL_RUTINA_EJERCICIO_PESO = "peso"
+        private const val COL_RUTINA_EJERCICIO_ANOTACIONES = "anotaciones"
+    }
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("""
-            CREATE TABLE rutinas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL,
-                diaSemana INTEGER NOT NULL,
-                fecha TEXT NOT NULL
-            );
-        """.trimIndent())
+        // Crear tabla Rutinas
+        val createRutinasTable = """
+            CREATE TABLE $TABLE_RUTINAS (
+                $COL_RUTINA_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $COL_RUTINA_NOMBRE TEXT NOT NULL,
+                $COL_RUTINA_DIA_SEMANA INTEGER NOT NULL,
+                $COL_RUTINA_FECHA TEXT NOT NULL
+            )
+        """.trimIndent()
 
-        db.execSQL("""
-            CREATE TABLE rutina_ejercicios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                rutinaId INTEGER NOT NULL,
-                ejercicioId INTEGER NOT NULL,
-                repeticiones INTEGER NOT NULL,
-                series INTEGER NOT NULL,
-                anotaciones TEXT,
-                FOREIGN KEY (rutinaId) REFERENCES rutinas(id),
-                FOREIGN KEY (ejercicioId) REFERENCES exercises(id)
-            );
-        """.trimIndent())
+        // Crear tabla Rutina_Ejercicios
+        val createRutinaEjerciciosTable = """
+            CREATE TABLE $TABLE_RUTINA_EJERCICIOS (
+                $COL_RUTINA_EJERCICIO_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $COL_RUTINA_EJERCICIO_RUTINA_ID INTEGER NOT NULL,
+                $COL_RUTINA_EJERCICIO_EJERCICIO_ID INTEGER NOT NULL,
+                $COL_RUTINA_EJERCICIO_REPETICIONES INTEGER NOT NULL,
+                $COL_RUTINA_EJERCICIO_SERIES INTEGER NOT NULL,
+                $COL_RUTINA_EJERCICIO_PESO REAL NOT NULL DEFAULT 0,
+                $COL_RUTINA_EJERCICIO_ANOTACIONES TEXT,
+                FOREIGN KEY($COL_RUTINA_EJERCICIO_RUTINA_ID) REFERENCES $TABLE_RUTINAS($COL_RUTINA_ID) ON DELETE CASCADE
+            )
+        """.trimIndent()
+
+        db.execSQL(createRutinasTable)
+        db.execSQL(createRutinaEjerciciosTable)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE rutinas ADD COLUMN fecha TEXT DEFAULT '2025-01-01'")
-        }
-        if (oldVersion < 3) {
-            db.execSQL("ALTER TABLE rutina_ejercicios ADD COLUMN series INTEGER NOT NULL DEFAULT 3")
-        }
+        // En caso de actualización de la base de datos
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_RUTINA_EJERCICIOS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_RUTINAS")
+        onCreate(db)
     }
 
-    // Insertar rutina, ahora con fecha obligatoria
+    @RequiresApi(Build.VERSION_CODES.O)
     fun insertRutina(nombre: String, diaSemana: Int, fecha: LocalDate): Long {
-        val db = writableDatabase
+        val db = this.writableDatabase
         val values = ContentValues().apply {
-            put("nombre", nombre)
-            put("diaSemana", diaSemana)
-            put("fecha", fecha.toString()) // Guardar fecha en formato ISO (yyyy-MM-dd)
+            put(COL_RUTINA_NOMBRE, nombre)
+            put(COL_RUTINA_DIA_SEMANA, diaSemana)
+            put(COL_RUTINA_FECHA, fecha.format(DateTimeFormatter.ISO_LOCAL_DATE))
         }
-        return db.insert("rutinas", null, values)
+        return db.insert(TABLE_RUTINAS, null, values)
     }
 
-    // Insertar ejercicio en rutina con repeticiones, series y anotaciones
     fun insertRutinaEjercicio(
         rutinaId: Long,
         ejercicioId: Long,
         repeticiones: Int,
         series: Int,
-        anotaciones: String?
+        peso: Double = 0.0,
+        anotaciones: String? = null
     ): Long {
-        val db = writableDatabase
+        val db = this.writableDatabase
         val values = ContentValues().apply {
-            put("rutinaId", rutinaId)
-            put("ejercicioId", ejercicioId)
-            put("repeticiones", repeticiones)
-            put("series", series)
-            put("anotaciones", anotaciones)
+            put(COL_RUTINA_EJERCICIO_RUTINA_ID, rutinaId)
+            put(COL_RUTINA_EJERCICIO_EJERCICIO_ID, ejercicioId)
+            put(COL_RUTINA_EJERCICIO_REPETICIONES, repeticiones)
+            put(COL_RUTINA_EJERCICIO_SERIES, series)
+            put(COL_RUTINA_EJERCICIO_PESO, peso)
+            put(COL_RUTINA_EJERCICIO_ANOTACIONES, anotaciones)
         }
-        return db.insert("rutina_ejercicios", null, values)
+        return db.insert(TABLE_RUTINA_EJERCICIOS, null, values)
     }
 
-    // Leer todas las rutinas con la fecha convertida a LocalDate
     @RequiresApi(Build.VERSION_CODES.O)
     fun getRutinas(): List<RutinaModels.Rutina> {
         val rutinas = mutableListOf<RutinaModels.Rutina>()
-        val db = readableDatabase
-        val cursor: Cursor = db.query("rutinas", null, null, null, null, null, "diaSemana ASC")
+        val db = this.readableDatabase
+        val cursor = db.query(
+            TABLE_RUTINAS,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "$COL_RUTINA_DIA_SEMANA ASC"
+        )
 
         with(cursor) {
             while (moveToNext()) {
-                val id = getLong(getColumnIndexOrThrow("id"))
-                val nombre = getString(getColumnIndexOrThrow("nombre"))
-                val diaSemana = getInt(getColumnIndexOrThrow("diaSemana"))
-                val fechaStr = getString(getColumnIndexOrThrow("fecha"))
-                val fecha = LocalDate.parse(fechaStr)
+                val id = getLong(getColumnIndexOrThrow(COL_RUTINA_ID))
+                val nombre = getString(getColumnIndexOrThrow(COL_RUTINA_NOMBRE))
+                val diaSemana = getInt(getColumnIndexOrThrow(COL_RUTINA_DIA_SEMANA))
+                val fechaStr = getString(getColumnIndexOrThrow(COL_RUTINA_FECHA))
+                val fecha = LocalDate.parse(fechaStr, DateTimeFormatter.ISO_LOCAL_DATE)
+
                 rutinas.add(RutinaModels.Rutina(id, nombre, diaSemana, fecha))
             }
         }
@@ -96,15 +130,16 @@ class RutinaDbHelper(context: Context) :
         return rutinas
     }
 
-    // Leer ejercicios de una rutina específica incluyendo series
     fun getEjerciciosPorRutina(rutinaId: Long): List<RutinaModels.RutinaEjercicio> {
         val ejercicios = mutableListOf<RutinaModels.RutinaEjercicio>()
-        val db = readableDatabase
-        val cursor: Cursor = db.query(
-            "rutina_ejercicios",
+        val db = this.readableDatabase
+        val selection = "$COL_RUTINA_EJERCICIO_RUTINA_ID = ?"
+        val selectionArgs = arrayOf(rutinaId.toString())
+        val cursor = db.query(
+            TABLE_RUTINA_EJERCICIOS,
             null,
-            "rutinaId = ?",
-            arrayOf(rutinaId.toString()),
+            selection,
+            selectionArgs,
             null,
             null,
             null
@@ -112,102 +147,161 @@ class RutinaDbHelper(context: Context) :
 
         with(cursor) {
             while (moveToNext()) {
-                val id = getLong(getColumnIndexOrThrow("id"))
-                val rutinaId = getLong(getColumnIndexOrThrow("rutinaId"))
-                val ejercicioId = getLong(getColumnIndexOrThrow("ejercicioId"))
-                val repeticiones = getInt(getColumnIndexOrThrow("repeticiones"))
-                val series = getInt(getColumnIndexOrThrow("series"))
-                val anotaciones = getString(getColumnIndexOrThrow("anotaciones"))
-                ejercicios.add(RutinaModels.RutinaEjercicio(id, rutinaId, ejercicioId, repeticiones, series, anotaciones))
+                val id = getLong(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_ID))
+                val ejercicioId = getLong(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_EJERCICIO_ID))
+                val repeticiones = getInt(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_REPETICIONES))
+                val series = getInt(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_SERIES))
+                val peso = getDouble(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_PESO))
+                val anotaciones = getString(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_ANOTACIONES))
+
+                ejercicios.add(
+                    RutinaModels.RutinaEjercicio(
+                        id, rutinaId, ejercicioId, repeticiones, series, peso, anotaciones
+                    )
+                )
             }
         }
         cursor.close()
         return ejercicios
     }
 
-    companion object {
-        const val DATABASE_NAME = "rutinas.db"
-        const val DATABASE_VERSION = 3
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun getRutinaById(id: Long): RutinaModels.Rutina? {
-        val db = readableDatabase
+        val db = this.readableDatabase
+        val selection = "$COL_RUTINA_ID = ?"
+        val selectionArgs = arrayOf(id.toString())
         val cursor = db.query(
-            "rutinas",
+            TABLE_RUTINAS,
             null,
-            "id = ?",
-            arrayOf(id.toString()),
+            selection,
+            selectionArgs,
             null,
             null,
             null
         )
 
-        cursor.use {
-            if (it.moveToFirst()) {
-                val nombre = it.getString(it.getColumnIndexOrThrow("nombre"))
-                val diaSemana = it.getInt(it.getColumnIndexOrThrow("diaSemana"))
-                val fechaStr = it.getString(it.getColumnIndexOrThrow("fecha"))
-                val fecha = LocalDate.parse(fechaStr)
-                return RutinaModels.Rutina(id, nombre, diaSemana, fecha)
+        var rutina: RutinaModels.Rutina? = null
+        with(cursor) {
+            if (moveToFirst()) {
+                val nombre = getString(getColumnIndexOrThrow(COL_RUTINA_NOMBRE))
+                val diaSemana = getInt(getColumnIndexOrThrow(COL_RUTINA_DIA_SEMANA))
+                val fechaStr = getString(getColumnIndexOrThrow(COL_RUTINA_FECHA))
+                val fecha = LocalDate.parse(fechaStr, DateTimeFormatter.ISO_LOCAL_DATE)
+
+                rutina = RutinaModels.Rutina(id, nombre, diaSemana, fecha)
             }
         }
-        return null
+        cursor.close()
+        return rutina
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun updateRutina(id: Long, nombre: String, diaSemana: Int, fecha: LocalDate): Boolean {
-        val db = writableDatabase
+        val db = this.writableDatabase
         val values = ContentValues().apply {
-            put("nombre", nombre)
-            put("diaSemana", diaSemana)
-            put("fecha", fecha.toString())
+            put(COL_RUTINA_NOMBRE, nombre)
+            put(COL_RUTINA_DIA_SEMANA, diaSemana)
+            put(COL_RUTINA_FECHA, fecha.format(DateTimeFormatter.ISO_LOCAL_DATE))
         }
-        val rowsAffected = db.update("rutinas", values, "id = ?", arrayOf(id.toString()))
-        return rowsAffected > 0
+
+        val selection = "$COL_RUTINA_ID = ?"
+        val selectionArgs = arrayOf(id.toString())
+
+        return db.update(TABLE_RUTINAS, values, selection, selectionArgs) > 0
     }
 
     fun updateRutinaEjercicio(
+        id: Long,
+        repeticiones: Int,
+        series: Int,
+        peso: Double,
+        anotaciones: String?
+    ): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(COL_RUTINA_EJERCICIO_REPETICIONES, repeticiones)
+            put(COL_RUTINA_EJERCICIO_SERIES, series)
+            put(COL_RUTINA_EJERCICIO_PESO, peso)
+            put(COL_RUTINA_EJERCICIO_ANOTACIONES, anotaciones)
+        }
+
+        val selection = "$COL_RUTINA_EJERCICIO_ID = ?"
+        val selectionArgs = arrayOf(id.toString())
+
+        return db.update(TABLE_RUTINA_EJERCICIOS, values, selection, selectionArgs) > 0
+    }
+
+    // Método para buscar un ejercicio específico en una rutina
+    fun getRutinaEjercicio(rutinaId: Long, ejercicioId: Long): RutinaModels.RutinaEjercicio? {
+        val db = this.readableDatabase
+        val selection = "$COL_RUTINA_EJERCICIO_RUTINA_ID = ? AND $COL_RUTINA_EJERCICIO_EJERCICIO_ID = ?"
+        val selectionArgs = arrayOf(rutinaId.toString(), ejercicioId.toString())
+
+        val cursor = db.query(
+            TABLE_RUTINA_EJERCICIOS,
+            null,
+            selection,
+            selectionArgs,
+            null,
+            null,
+            null
+        )
+
+        var rutinaEjercicio: RutinaModels.RutinaEjercicio? = null
+        with(cursor) {
+            if (moveToFirst()) {
+                val id = getLong(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_ID))
+                val repeticiones = getInt(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_REPETICIONES))
+                val series = getInt(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_SERIES))
+                val peso = getDouble(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_PESO))
+                val anotaciones = getString(getColumnIndexOrThrow(COL_RUTINA_EJERCICIO_ANOTACIONES))
+
+                rutinaEjercicio = RutinaModels.RutinaEjercicio(
+                    id, rutinaId, ejercicioId, repeticiones, series, peso, anotaciones
+                )
+            }
+        }
+        cursor.close()
+        return rutinaEjercicio
+    }
+
+    // Añade un método para actualizar un ejercicio identificándolo por rutinaId y ejercicioId
+    fun updateRutinaEjercicioByIds(
         rutinaId: Long,
         ejercicioId: Long,
         repeticiones: Int,
         series: Int,
+        peso: Double,
         anotaciones: String?
     ): Boolean {
-        val db = writableDatabase
+        val db = this.writableDatabase
         val values = ContentValues().apply {
-            put("repeticiones", repeticiones)
-            put("series", series)
-            put("anotaciones", anotaciones)
+            put(COL_RUTINA_EJERCICIO_REPETICIONES, repeticiones)
+            put(COL_RUTINA_EJERCICIO_SERIES, series)
+            put(COL_RUTINA_EJERCICIO_PESO, peso)
+            put(COL_RUTINA_EJERCICIO_ANOTACIONES, anotaciones)
         }
-        val rowsAffected = db.update(
-            "rutina_ejercicios",
-            values,
-            "rutinaId = ? AND ejercicioId = ?",
-            arrayOf(rutinaId.toString(), ejercicioId.toString())
-        )
-        return rowsAffected > 0
+
+        val selection = "$COL_RUTINA_EJERCICIO_RUTINA_ID = ? AND $COL_RUTINA_EJERCICIO_EJERCICIO_ID = ?"
+        val selectionArgs = arrayOf(rutinaId.toString(), ejercicioId.toString())
+
+        return db.update(TABLE_RUTINA_EJERCICIOS, values, selection, selectionArgs) > 0
     }
 
     fun deleteEjercicioDeRutina(rutinaId: Long, ejercicioId: Long): Boolean {
-        val db = writableDatabase
-        val rowsDeleted = db.delete(
-            "rutina_ejercicios",
-            "rutinaId = ? AND ejercicioId = ?",
-            arrayOf(rutinaId.toString(), ejercicioId.toString())
-        )
-        return rowsDeleted > 0
+        val db = this.writableDatabase
+        val selection = "$COL_RUTINA_EJERCICIO_RUTINA_ID = ? AND $COL_RUTINA_EJERCICIO_EJERCICIO_ID = ?"
+        val selectionArgs = arrayOf(rutinaId.toString(), ejercicioId.toString())
+
+        return db.delete(TABLE_RUTINA_EJERCICIOS, selection, selectionArgs) > 0
     }
 
-    fun deleteRutina(rutinaId: Long): Boolean {
-        val db = writableDatabase
+    fun deleteRutina(id: Long): Boolean {
+        val db = this.writableDatabase
+        val selection = "$COL_RUTINA_ID = ?"
+        val selectionArgs = arrayOf(id.toString())
 
-        // Eliminar primero los ejercicios asociados a la rutina (clave foránea)
-        db.delete("rutina_ejercicios", "rutinaId = ?", arrayOf(rutinaId.toString()))
-
-        // Luego eliminar la rutina
-        val rowsDeleted = db.delete("rutinas", "id = ?", arrayOf(rutinaId.toString()))
-
-        return rowsDeleted > 0
+        // Gracias a ON DELETE CASCADE, los ejercicios asociados se eliminarán automáticamente
+        return db.delete(TABLE_RUTINAS, selection, selectionArgs) > 0
     }
 }

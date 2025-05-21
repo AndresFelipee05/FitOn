@@ -19,9 +19,10 @@ class RutinaRepository(context: Context) {
         ejercicioId: Long,
         repeticiones: Int,
         series: Int,
+        peso: Double,
         anotaciones: String?
     ): Long {
-        return dbHelper.insertRutinaEjercicio(rutinaId, ejercicioId, repeticiones, series, anotaciones)
+        return dbHelper.insertRutinaEjercicio(rutinaId, ejercicioId, repeticiones, series, peso, anotaciones)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -38,19 +39,36 @@ class RutinaRepository(context: Context) {
         return dbHelper.getRutinaById(id)
     }
 
+    fun obtenerRutinaEjercicio(rutinaId: Long, ejercicioId: Long): RutinaModels.RutinaEjercicio? {
+        return dbHelper.getRutinaEjercicio(rutinaId, ejercicioId)
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun actualizarRutina(id: Long, nombre: String, diaSemana: Int, fecha: LocalDate): Boolean {
         return dbHelper.updateRutina(id, nombre, diaSemana, fecha)
     }
 
+    // Método para actualizar un ejercicio por su ID
     fun actualizarEjercicioDeRutina(
+        id: Long, // El id del registro en rutina_ejercicios
+        repeticiones: Int,
+        series: Int,
+        peso: Double,
+        anotaciones: String?
+    ): Boolean {
+        return dbHelper.updateRutinaEjercicio(id, repeticiones, series, peso, anotaciones)
+    }
+
+    // Nuevo método para actualizar un ejercicio usando rutinaId y ejercicioId
+    fun actualizarEjercicioDeRutinaPorIds(
         rutinaId: Long,
         ejercicioId: Long,
         repeticiones: Int,
         series: Int,
+        peso: Double,
         anotaciones: String?
     ): Boolean {
-        return dbHelper.updateRutinaEjercicio(rutinaId, ejercicioId, repeticiones, series, anotaciones)
+        return dbHelper.updateRutinaEjercicioByIds(rutinaId, ejercicioId, repeticiones, series, peso, anotaciones)
     }
 
     fun eliminarEjercicioDeRutina(rutinaId: Long, ejercicioId: Long): Boolean {

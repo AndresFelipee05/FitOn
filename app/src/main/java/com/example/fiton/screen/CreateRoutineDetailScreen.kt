@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -27,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,10 +45,12 @@ data class ExerciseSelection(
     val exercise: Exercise,
     var reps: Int = 10,
     var series: Int = 3,
+    var peso: Double = 0.0,
     var notes: String? = null
 ) {
     var repsState by mutableStateOf(reps)
     var seriesState by mutableStateOf(series)  // Estado para series
+    var pesoState by mutableStateOf(peso)
     var notesState by mutableStateOf(notes ?: "")
 }
 
@@ -528,8 +532,7 @@ fun CreateRoutineDetailScreen(
             }
         }
 
-        // Diálogo para crear la rutina (configurar repeticiones y notas)
-        // Diálogo para crear la rutina (configurar repeticiones, series y notas)
+        // Diálogo para crear la rutina (configurar repeticiones, series, notas y el nuevo atributo double)
         if (showCreateRoutineDialog) {
             var routineName by remember {
                 mutableStateOf(
@@ -566,7 +569,7 @@ fun CreateRoutineDetailScreen(
                             label = { Text("Nombre de la rutina", color = Color.Gray) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 16.dp),
+                                .padding(bottom = 8.dp),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color(0xFF3C3C3C),
                                 unfocusedContainerColor = Color(0xFF3C3C3C),
@@ -597,13 +600,13 @@ fun CreateRoutineDetailScreen(
                                             .padding(16.dp)
                                     ) {
                                         Text(
-                                            text = selection.exercise.name,
+                                            text = "${selection.exercise.name} - ${selection.exercise.muscleGroup}",
                                             style = MaterialTheme.typography.titleMedium,
                                             color = Color.White,
                                             modifier = Modifier.padding(bottom = 8.dp)
                                         )
 
-                                        // Campo de repeticiones (ahora arriba)
+                                        // Campo de repeticiones (ahora permite 0)
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier
@@ -618,14 +621,18 @@ fun CreateRoutineDetailScreen(
                                             OutlinedTextField(
                                                 value = selection.repsState.toString(),
                                                 onValueChange = { newValue ->
-                                                    val reps = newValue.toIntOrNull()
-                                                    if (reps != null && reps >= 0) {
-                                                        selection.repsState = reps
-                                                        selection.reps = reps
+                                                    // Permite valores desde 0
+                                                    if (newValue.isEmpty() || newValue.toIntOrNull() != null) {
+                                                        val reps = newValue.toIntOrNull() ?: 0
+                                                        if (reps >= 0) { // Validación para no permitir negativos
+                                                            selection.repsState = reps
+                                                            selection.reps = reps
+                                                        }
                                                     }
                                                 },
                                                 modifier = Modifier.width(100.dp),
                                                 singleLine = true,
+                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                 colors = TextFieldDefaults.colors(
                                                     focusedContainerColor = Color(0xFF3C3C3C),
                                                     unfocusedContainerColor = Color(0xFF3C3C3C),
@@ -635,7 +642,7 @@ fun CreateRoutineDetailScreen(
                                             )
                                         }
 
-                                        // Campo de series (ahora abajo)
+                                        // Campo de series
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier
@@ -658,6 +665,40 @@ fun CreateRoutineDetailScreen(
                                                 },
                                                 modifier = Modifier.width(100.dp),
                                                 singleLine = true,
+                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                colors = TextFieldDefaults.colors(
+                                                    focusedContainerColor = Color(0xFF3C3C3C),
+                                                    unfocusedContainerColor = Color(0xFF3C3C3C),
+                                                    focusedTextColor = Color.White,
+                                                    unfocusedTextColor = Color.White
+                                                )
+                                            )
+                                        }
+
+                                        // Campo de peso
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                "Peso (kg): ",
+                                                color = Color.White,
+                                                modifier = Modifier.padding(end = 8.dp)
+                                            )
+                                            OutlinedTextField(
+                                                value = selection.pesoState.toString(),
+                                                onValueChange = { newValue ->
+                                                    val weight = newValue.toDoubleOrNull()
+                                                    if (weight != null && weight >= 0) {
+                                                        selection.pesoState = weight
+                                                        selection.peso = weight
+                                                    }
+                                                },
+                                                modifier = Modifier.width(100.dp),
+                                                singleLine = true,
+                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                 colors = TextFieldDefaults.colors(
                                                     focusedContainerColor = Color(0xFF3C3C3C),
                                                     unfocusedContainerColor = Color(0xFF3C3C3C),
@@ -719,14 +760,15 @@ fun CreateRoutineDetailScreen(
                                     val rutinaId = rutinaRepository.insertarRutina(
                                         routineName,
                                         dayOfWeek,
-                                        date
+                                        date // Añadimos el nuevo atributo
                                     )
                                     savedExercises.forEach {
                                         rutinaRepository.insertarRutinaEjercicio(
                                             rutinaId,
                                             it.exercise.id,
-                                            it.series,
                                             it.reps,
+                                            it.series,
+                                            it.peso,
                                             it.notes
                                         )
                                     }
