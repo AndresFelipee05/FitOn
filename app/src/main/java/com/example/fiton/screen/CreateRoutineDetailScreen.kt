@@ -5,12 +5,12 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -23,11 +23,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -106,7 +108,13 @@ fun CreateRoutineDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Rutina del ${date.toString()}") },
+                title = {
+                    Text(
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White, text = "Rutina del ${date.toString()}"
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -404,8 +412,9 @@ fun CreateRoutineDetailScreen(
                                     contentDescription = "Imagen del ejercicio",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
-                                        .size(70.dp)
+                                        .size(85.dp)
                                         .padding(end = 12.dp)
+                                        .clip(RoundedCornerShape(8.dp))
                                 )
 
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -484,7 +493,7 @@ fun CreateRoutineDetailScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text(
-                                            text = selection.exercise.name,
+                                            text = "${selection.exercise.name} - ${selection.exercise.muscleGroup}",
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = Color.White,
                                             modifier = Modifier.weight(1f)
@@ -524,7 +533,7 @@ fun CreateRoutineDetailScreen(
                                     containerColor = Color(0xFFFF9800)
                                 )
                             ) {
-                                Text("Cerrar")
+                                Text("Cerrar", color = Color.White)
                             }
                         }
                     }
@@ -547,32 +556,37 @@ fun CreateRoutineDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .wrapContentHeight(),
-                    shape = MaterialTheme.shapes.medium,
-                    color = Color(0xFF1E1E1E)
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF1E1E1E),
+                    tonalElevation = 4.dp
                 ) {
                     Column(
                         modifier = Modifier
-                            .padding(16.dp)
+                            .padding(20.dp)
                             .fillMaxWidth()
                     ) {
+                        // Título
                         Text(
                             text = "Configurar rutina",
                             style = MaterialTheme.typography.headlineSmall,
                             color = Color.White,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp)
                         )
 
-                        // Campo para el nombre de la rutina
+                        // Input nombre rutina
                         OutlinedTextField(
                             value = routineName,
                             onValueChange = { routineName = it },
                             label = { Text("Nombre de la rutina", color = Color.Gray) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 8.dp),
+                                .padding(bottom = 12.dp),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFF3C3C3C),
-                                unfocusedContainerColor = Color(0xFF3C3C3C),
+                                focusedContainerColor = Color(0xFF2C2C2C),
+                                unfocusedContainerColor = Color(0xFF2C2C2C),
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
                                 focusedLabelColor = Color(0xFFFF9800),
@@ -580,6 +594,7 @@ fun CreateRoutineDetailScreen(
                             )
                         )
 
+                        // Lista de ejercicios
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -591,8 +606,10 @@ fun CreateRoutineDetailScreen(
                                         .fillMaxWidth()
                                         .padding(vertical = 8.dp),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = Color(0xFF2C2C2C)
-                                    )
+                                        containerColor = Color(0xFF2A2A2A)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    elevation = CardDefaults.cardElevation(2.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier
@@ -606,116 +623,68 @@ fun CreateRoutineDetailScreen(
                                             modifier = Modifier.padding(bottom = 8.dp)
                                         )
 
-                                        // Campo de repeticiones (ahora permite 0)
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                "Repeticiones: ",
-                                                color = Color.White,
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-                                            OutlinedTextField(
-                                                value = selection.repsState.toString(),
-                                                onValueChange = { newValue ->
-                                                    // Permite valores desde 0
-                                                    if (newValue.isEmpty() || newValue.toIntOrNull() != null) {
-                                                        val reps = newValue.toIntOrNull() ?: 0
-                                                        if (reps >= 0) { // Validación para no permitir negativos
-                                                            selection.repsState = reps
-                                                            selection.reps = reps
+                                        // Campos de configuración
+                                        listOf(
+                                            "Repeticiones" to selection.repsState.toString(),
+                                            "Series" to selection.seriesState.toString(),
+                                            "Peso (kg)" to selection.pesoState.toString()
+                                        ).forEachIndexed { index, (label, value) ->
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp)
+                                            ) {
+                                                Text("$label: ", color = Color.White)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                OutlinedTextField(
+                                                    value = value,
+                                                    onValueChange = { newValue ->
+                                                        val num = newValue.toDoubleOrNull()
+                                                        if (num != null && num >= 0) {
+                                                            when (index) {
+                                                                0 -> {
+                                                                    selection.repsState =
+                                                                        num.toInt()
+                                                                    selection.reps = num.toInt()
+                                                                }
+
+                                                                1 -> {
+                                                                    selection.seriesState =
+                                                                        num.toInt()
+                                                                    selection.series = num.toInt()
+                                                                }
+
+                                                                2 -> {
+                                                                    selection.pesoState = num
+                                                                    selection.peso = num
+                                                                }
+                                                            }
                                                         }
-                                                    }
-                                                },
-                                                modifier = Modifier.width(100.dp),
-                                                singleLine = true,
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                colors = TextFieldDefaults.colors(
-                                                    focusedContainerColor = Color(0xFF3C3C3C),
-                                                    unfocusedContainerColor = Color(0xFF3C3C3C),
-                                                    focusedTextColor = Color.White,
-                                                    unfocusedTextColor = Color.White
+                                                    },
+                                                    modifier = Modifier.width(100.dp),
+                                                    singleLine = true,
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                    colors = TextFieldDefaults.colors(
+                                                        focusedContainerColor = Color(0xFF3C3C3C),
+                                                        unfocusedContainerColor = Color(0xFF3C3C3C),
+                                                        focusedTextColor = Color.White,
+                                                        unfocusedTextColor = Color.White
+                                                    )
                                                 )
-                                            )
-                                        }
-
-                                        // Campo de series
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                "Series: ",
-                                                color = Color.White,
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-                                            OutlinedTextField(
-                                                value = selection.seriesState.toString(),
-                                                onValueChange = { newValue ->
-                                                    val series = newValue.toIntOrNull()
-                                                    if (series != null && series >= 0) {
-                                                        selection.seriesState = series
-                                                        selection.series = series
-                                                    }
-                                                },
-                                                modifier = Modifier.width(100.dp),
-                                                singleLine = true,
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                colors = TextFieldDefaults.colors(
-                                                    focusedContainerColor = Color(0xFF3C3C3C),
-                                                    unfocusedContainerColor = Color(0xFF3C3C3C),
-                                                    focusedTextColor = Color.White,
-                                                    unfocusedTextColor = Color.White
-                                                )
-                                            )
-                                        }
-
-                                        // Campo de peso
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                "Peso (kg): ",
-                                                color = Color.White,
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-                                            OutlinedTextField(
-                                                value = selection.pesoState.toString(),
-                                                onValueChange = { newValue ->
-                                                    val weight = newValue.toDoubleOrNull()
-                                                    if (weight != null && weight >= 0) {
-                                                        selection.pesoState = weight
-                                                        selection.peso = weight
-                                                    }
-                                                },
-                                                modifier = Modifier.width(100.dp),
-                                                singleLine = true,
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                colors = TextFieldDefaults.colors(
-                                                    focusedContainerColor = Color(0xFF3C3C3C),
-                                                    unfocusedContainerColor = Color(0xFF3C3C3C),
-                                                    focusedTextColor = Color.White,
-                                                    unfocusedTextColor = Color.White
-                                                )
-                                            )
+                                            }
                                         }
 
                                         OutlinedTextField(
                                             value = selection.notesState,
-                                            onValueChange = { newNotes ->
-                                                selection.notesState = newNotes
-                                                selection.notes = newNotes
+                                            onValueChange = {
+                                                selection.notesState = it
+                                                selection.notes = it
                                             },
                                             label = { Text("Anotaciones", color = Color.Gray) },
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 8.dp),
                                             colors = TextFieldDefaults.colors(
                                                 focusedContainerColor = Color(0xFF3C3C3C),
                                                 unfocusedContainerColor = Color(0xFF3C3C3C),
@@ -730,20 +699,23 @@ fun CreateRoutineDetailScreen(
                             }
                         }
 
+                        // Botones
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .padding(top = 20.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Button(
                                 onClick = { showCreateRoutineDialog = false },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFFF9800)
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                                shape = RoundedCornerShape(50),
+                                modifier = Modifier.weight(1f)
                             ) {
                                 Text("Cancelar", color = Color.White)
                             }
+
+                            Spacer(modifier = Modifier.width(16.dp))
 
                             Button(
                                 onClick = {
@@ -760,7 +732,7 @@ fun CreateRoutineDetailScreen(
                                     val rutinaId = rutinaRepository.insertarRutina(
                                         routineName,
                                         dayOfWeek,
-                                        date // Añadimos el nuevo atributo
+                                        date
                                     )
                                     savedExercises.forEach {
                                         rutinaRepository.insertarRutinaEjercicio(
@@ -780,10 +752,14 @@ fun CreateRoutineDetailScreen(
                                     navController.popBackStack()
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFFF9800)
-                                )
+                                    containerColor = Color(
+                                        0xFFFF9800
+                                    )
+                                ),
+                                shape = RoundedCornerShape(50),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text("Guardar rutina", color = Color.White)
+                                Text("Guardar", color = Color.White)
                             }
                         }
                     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -13,13 +14,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.fiton.data.ExerciseRepository
 import com.example.fiton.data.RutinaRepository
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
 
@@ -53,15 +57,32 @@ fun CreateRoutineScreen(
                 title = {
                     Text(
                         "Crear Rutina",
-                        style = MaterialTheme.typography.headlineSmall
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-                    }
                 }
             )
+        },
+        floatingActionButton = {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomStart // Alinea el contenido en la esquina inferior izquierda
+            ) {
+                FloatingActionButton(
+                    onClick = { navController.popBackStack() },
+                    containerColor = Color(0xFFFF9800),
+                    modifier = Modifier
+                        .padding(start = 50.dp, bottom = 10.dp) // Margen para evitar que toque el borde
+                        .width(80.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = Color.White
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Column(
@@ -89,28 +110,76 @@ fun CreateRoutineScreen(
             )
         }
 
-        if (showDialog && selectedDate != null) {
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("Crear Rutina") },
-                text = { Text("¿Deseas crear una rutina para el día ${selectedDate.toString()}?") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showDialog = false
-                        navController.navigate("crear_rutina_detalle/${selectedDate}")
-                    }) {
-                        Text("Sí")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Cancelar")
-                    }
-                }
-            )
-        }
+        CreateRoutineDialog(
+            showDialog = showDialog,
+            selectedDate = selectedDate,
+            onDismiss = { showDialog = false },
+            onConfirm = { date -> navController.navigate("crear_rutina_detalle/$date") }
+        )
+
     }
 }
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun CreateRoutineDialog(
+    showDialog: Boolean,
+    selectedDate: LocalDate?,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalDate) -> Unit
+) {
+    if (showDialog && selectedDate != null) {
+        val formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", Locale("es", "ES"))
+        val formattedDate = selectedDate.format(formatter).replaceFirstChar { it.uppercase() }
+
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Text(
+                    text = "Crear Rutina",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Deseas crear una rutina para el día $formattedDate?",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                )
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancelar")
+                    }
+
+                    TextButton(
+                        onClick = {
+                            onConfirm(selectedDate)
+                            onDismiss()
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = Color(0xFFFF9800)
+                        )
+                    ) {
+                        Text("Sí")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable

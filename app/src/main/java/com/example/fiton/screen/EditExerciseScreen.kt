@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -165,7 +166,9 @@ fun EditExerciseScreen(
     ) {
         Text(
             text = "Editar Ejercicio",
-            style = MaterialTheme.typography.headlineMedium,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()

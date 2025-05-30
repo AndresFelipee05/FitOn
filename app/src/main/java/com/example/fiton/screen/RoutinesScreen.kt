@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -55,31 +55,24 @@ fun RoutinesScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar( // Centrar el título
                 title = {
                     Text(
                         text = "Rutinas",
-                        color = Color.White,
-                        modifier = Modifier.fillMaxWidth(),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Filled.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = Color.White
-                        )
-                    }
-                },
+                }
             )
         },
-        floatingActionButton = {
+        floatingActionButton = { // Botón de agregar rutina en la esquina inferior derecha
             FloatingActionButton(
                 onClick = {
                     navController.navigate("create_routine_screen")
                 },
-                containerColor = Color(0xFFFF9800)
+                containerColor = Color(0xFFFF9800),
+                modifier = Modifier.width(80.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -89,80 +82,107 @@ fun RoutinesScreen(
             }
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFF121212))
         ) {
-            // Barra de búsqueda
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .fillMaxSize()
+                    .background(Color(0xFF121212))
             ) {
-                Box(
+                // Barra de búsqueda
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .weight(1f)
-                        .background(Color(0xFF2C2C2C), shape = MaterialTheme.shapes.small)
-                        .padding(12.dp)
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = "Buscar rutinas...",
-                            color = Color.Gray,
-                            fontSize = 16.sp
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(Color(0xFF2C2C2C), shape = MaterialTheme.shapes.small)
+                            .padding(12.dp)
+                    ) {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = "Buscar rutinas...",
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            )
+                        }
+                        BasicTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = { /* Acción de búsqueda */ }) {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = "Buscar",
+                            tint = Color.White
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(onClick = { /* Acción de búsqueda */ }) {
-                    Icon(
-                        Icons.Filled.Search,
-                        contentDescription = "Buscar",
-                        tint = Color.White
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            val noResultsText = if (query.isNotBlank())
-                "No hay rutinas que coincidan con '$query'"
-            else
-                "No se encontraron rutinas"
+                val noResultsText = if (query.isNotBlank())
+                    "No hay rutinas que coincidan con '$query'"
+                else
+                    "No se encontraron rutinas"
 
-            if (filteredRutinas.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = noResultsText,
-                        color = Color.Gray,
-                        fontSize = 18.sp
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filteredRutinas, key = { it.id }) { rutina ->
-                        RoutineCard(rutina) {
-                            navController.navigate("edit_routine_screen/${rutina.id}")
+                if (filteredRutinas.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = noResultsText,
+                            color = Color.Gray,
+                            fontSize = 18.sp
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 0.dp,
+                                bottom = 100.dp // margen inferior para evitar superposición con los FABs
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+
+                        items(filteredRutinas, key = { it.id }) { rutina ->
+                            RoutineCard(rutina) {
+                                navController.navigate("edit_routine_screen/${rutina.id}")
+                            }
                         }
                     }
                 }
+            }
+
+            // Botón para ir hacia atrás en la esquina inferior izquierda
+            FloatingActionButton(
+                onClick = { navController.popBackStack() },
+                containerColor = Color(0xFFFF9800),
+                modifier = Modifier
+                    .align(Alignment.BottomStart) // Ubicación en la parte inferior izquierda
+                    .padding(start = 16.dp, bottom = 16.dp) // Espacio para evitar el borde
+                    .width(80.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = Color.White
+                )
             }
         }
     }

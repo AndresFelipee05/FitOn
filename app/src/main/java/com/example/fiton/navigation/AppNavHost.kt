@@ -22,9 +22,12 @@ import com.example.fiton.screen.CreateRoutineScreen
 import com.example.fiton.screen.EditExerciseScreen
 import com.example.fiton.screen.EditRoutineScreen
 import com.example.fiton.screen.ExercisesScreen
+import com.example.fiton.screen.ImcScreen
 import com.example.fiton.screen.RoutinesScreen
 import com.example.fiton.screen.SearchScreen
 import java.time.LocalDate
+import com.example.fiton.screen.RendimientoScreen
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -52,6 +55,15 @@ fun AppNavHost(modifier: Modifier) {
                 exerciseRepository = exerciseRepository,
                 rutinaRepository = rutinaRepository
             )
+        }
+        composable("ver_rendimiento") {
+            RendimientoScreen(
+                navController = navController,
+                rutinaRepository = rutinaRepository
+            )
+        }
+        composable("imc_screen") {
+            ImcScreen(navController = navController)
         }
         composable(
             route = "crear_rutina_detalle/{fecha}",
