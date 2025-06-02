@@ -31,6 +31,9 @@ import kotlin.math.*
 import android.net.Uri
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 
 @Composable
 fun ImcScreen(navController: NavController) {
@@ -40,18 +43,32 @@ fun ImcScreen(navController: NavController) {
     var mostrarResultado by remember { mutableStateOf(false) }
     var mostrarDialogo by remember { mutableStateOf(false) }
 
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp.dp
+
+    val dialogTitleTextSize = when {
+        screenWidthDp < 360.dp -> 20.sp
+        screenWidthDp < 480.dp -> 24.sp
+        else -> 28.sp
+    }
+
+    val dialogContentTextSize = when {
+        screenWidthDp < 360.dp -> 12.sp
+        screenWidthDp < 480.dp -> 14.sp
+        else -> 16.sp
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Contenido principal arriba, con scroll si es necesario
+        // Contenido principal con padding bottom para evitar que se solape con los botones
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.TopCenter)
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 100.dp) // Bottom padding para botones
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -112,16 +129,14 @@ fun ImcScreen(navController: NavController) {
                     context.startActivity(intent)
                 }
             )
-
-            Spacer(modifier = Modifier.height(50.dp))
         }
 
-        // Row con botones abajo
+        // Row con botones fijos en la parte inferior
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             FloatingActionButton(
@@ -157,7 +172,7 @@ fun ImcScreen(navController: NavController) {
                 containerColor = if (altura.isNotEmpty() && peso.isNotEmpty()) {
                     Color(0xFFFF9800)
                 } else {
-                    Color(0xFFFF9800).copy(alpha = 0.2f)  // Naranja transparente
+                    Color(0xFFFF9800).copy(alpha = 0.2f)
                 },
                 modifier = Modifier.width(80.dp)
             ) {
@@ -189,7 +204,7 @@ fun ImcScreen(navController: NavController) {
                     Text(
                         text = "Resultado de IMC",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
+                        fontSize = dialogTitleTextSize,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 16.dp),
@@ -208,7 +223,11 @@ fun ImcScreen(navController: NavController) {
                 }
             },
             text = {
-                ImcResultadoDetallado(imc = imc!!, altura = altura.toFloatOrNull() ?: 0f)
+                ImcResultadoDetallado(
+                    imc = imc!!,
+                    altura = altura.toFloatOrNull() ?: 0f,
+                    contentFontSize = dialogContentTextSize
+                )
             }
         )
     }
@@ -216,7 +235,7 @@ fun ImcScreen(navController: NavController) {
 
 
 @Composable
-fun ImcResultadoDetallado(imc: Float, altura: Float) {
+fun ImcResultadoDetallado(imc: Float, altura: Float, contentFontSize: TextUnit) {
     val alturaMetros = altura / 100f
     val pesoMinimo = 18.5f * (alturaMetros * alturaMetros)
     val pesoMaximo = 24.9f * (alturaMetros * alturaMetros)
@@ -235,7 +254,7 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                 Text(
                     text = "Categoría",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontSize = contentFontSize
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -252,7 +271,7 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
 
                 Text(
                     text = categoria,
-                    fontSize = 13.sp,
+                    fontSize = contentFontSize,
                     fontWeight = FontWeight.Bold,
                     color = when {
                         imc <= 15.9f -> Color(0xFF9C27B0)
@@ -264,7 +283,9 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                         imc <= 39.9f -> Color(0xFFD32F2F)
                         else -> Color(0xFFB71C1C)
                     },
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -283,10 +304,13 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                 categorias.forEach { cat ->
                     Text(
                         text = cat,
-                        fontSize = 13.sp,
+                            fontSize = contentFontSize, // Reducido de 13sp a 12sp
                         color = if (cat == categoria) Color.Yellow else Color.LightGray,
                         fontWeight = if (cat == categoria) FontWeight.Bold else FontWeight.Normal,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        modifier = Modifier.padding(vertical = 1.dp), // Reducido de 2dp a 1dp
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -298,7 +322,7 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                 Text(
                     text = "Diferencia",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontSize = contentFontSize
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -306,17 +330,13 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                 val pesoActual = imc * (alturaMetros * alturaMetros)
 
                 val ajusteTexto = when {
-                    // Si el IMC está en rango normal (18.5-24.9), mostrar peso ideal
                     imc in 18.5f..24.9f -> "Peso ideal"
-
-                    // Si está fuera del rango normal, calcular diferencia
                     imc < 18.5f -> {
                         val pesoMinimoNormal = 18.5f * (alturaMetros * alturaMetros)
                         val diferencia = pesoActual - pesoMinimoNormal
                         "${String.format("%.1f", diferencia)} kg"
                     }
-
-                    else -> { // imc > 24.9f
+                    else -> {
                         val pesoMaximoNormal = 24.9f * (alturaMetros * alturaMetros)
                         val diferencia = pesoActual - pesoMaximoNormal
                         "+${String.format("%.1f", diferencia)} kg"
@@ -330,12 +350,14 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                     Text(
                         text = ajusteTexto,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
+                        fontSize = contentFontSize,
                         color = when {
-                            imc in 18.5f..24.9f -> Color(0xFF4CAF50) // Verde para peso ideal
-                            imc < 18.5f -> Color(0xFF2196F3) // Azul para bajo peso
-                            else -> Color(0xFFF44336) // Rojo para sobrepeso
-                        }
+                            imc in 18.5f..24.9f -> Color(0xFF4CAF50)
+                            imc < 18.5f -> Color(0xFF2196F3)
+                            else -> Color(0xFFF44336)
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -366,10 +388,13 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                 rangos.forEach { rango ->
                     Text(
                         text = rango,
-                        fontSize = 14.sp,
+                        fontSize = contentFontSize, // Reducido de 14sp a 12sp
                         color = if (rango == rangoActual) Color.Yellow else Color.LightGray,
                         fontWeight = if (rango == rangoActual) FontWeight.Bold else FontWeight.Normal,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        modifier = Modifier.padding(vertical = 1.dp), // Reducido de 2dp a 1dp
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -386,22 +411,22 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween // Espaciado uniforme entre columnas
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
-                modifier = Modifier.weight(1f), // Mismo peso que la columna de categoría
+                modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "Peso normal:",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = contentFontSize,
                     textAlign = TextAlign.Center
                 )
             }
 
             Column(
-                modifier = Modifier.weight(1f), // Mismo peso que la columna de diferencia
+                modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -412,13 +437,14 @@ fun ImcResultadoDetallado(imc: Float, altura: Float) {
                         )
                     } kg",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = contentFontSize, // Reducido de 16sp a 14sp
                     color = Color(0xFF4CAF50),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
-
     }
 }
 

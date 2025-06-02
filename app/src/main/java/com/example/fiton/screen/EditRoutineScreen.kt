@@ -99,6 +99,7 @@ fun EditRoutineScreen(
                     containerColor = Color(0xFFFF9800),
                     modifier = Modifier
                         .width(80.dp)
+                        .navigationBarsPadding()
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowBack,

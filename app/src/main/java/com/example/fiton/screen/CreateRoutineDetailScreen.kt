@@ -32,6 +32,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -156,8 +157,13 @@ fun CreateRoutineDetailScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            "Guardar ejercicios", modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
+                            text = "Guardar\nejercicos",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            fontSize = 12.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -178,9 +184,13 @@ fun CreateRoutineDetailScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            "Editar ejercicios",
+                            text = "Editar\nejercicos",
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            fontSize = 12.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -199,8 +209,13 @@ fun CreateRoutineDetailScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            "Crear rutina", modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
+                            text = "Crear\nrutina",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            fontSize = 12.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -213,7 +228,7 @@ fun CreateRoutineDetailScreen(
                 .padding(paddingValues)
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
         ) {
             // --- BUSCADOR ---
             Row(

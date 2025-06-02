@@ -119,6 +119,7 @@ fun RendimientoScreen(navController: NavController, rutinaRepository: RutinaRepo
                     containerColor = Color(0xFFFF9800),
                     modifier = Modifier
                         .width(80.dp)
+                        .navigationBarsPadding()
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowBack,
@@ -173,6 +174,7 @@ fun RendimientoScreen(navController: NavController, rutinaRepository: RutinaRepo
                     containerColor = Color(0xFFFF9800),
                     modifier = Modifier
                         .width(80.dp)
+                        .navigationBarsPadding()
                 )
                 {
                     Icon(
@@ -212,22 +214,31 @@ fun RendimientoScreen(navController: NavController, rutinaRepository: RutinaRepo
             Spacer(modifier = Modifier.height(35.dp))
 
             // Chips para modo de visualización
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Ver rendimiento:", style = MaterialTheme.typography.titleMedium)
-                CustomChip(
-                    text = "Ejercicio",
-                    isSelected = modoAgrupacion == "Ejercicio",
-                    onClick = { modoAgrupacion = "Ejercicio" }
+                Text(
+                    text = "Ver rendimiento:",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-                CustomChip(
-                    text = "Grupo Muscular",
-                    isSelected = modoAgrupacion == "Grupo Muscular",
-                    onClick = { modoAgrupacion = "Grupo Muscular" }
-                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CustomChip(
+                        text = "Ejercicio",
+                        isSelected = modoAgrupacion == "Ejercicio",
+                        onClick = { modoAgrupacion = "Ejercicio" }
+                    )
+                    CustomChip(
+                        text = "Grupo Muscular",
+                        isSelected = modoAgrupacion == "Grupo Muscular",
+                        onClick = { modoAgrupacion = "Grupo Muscular" }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(35.dp))

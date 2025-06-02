@@ -212,8 +212,10 @@ fun SearchScreen(
             containerColor = Color(0xFFFF9800),
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
+                .padding(vertical = 10.dp)
                 .width(80.dp)
+                .navigationBarsPadding()
         ) {
             Icon(
                 imageVector = Icons.Filled.ArrowBack,
@@ -231,8 +233,10 @@ fun SearchScreen(
             containerColor = Color(0xFFFF9800),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
+                .padding(vertical = 10.dp)
                 .width(80.dp)
+                .navigationBarsPadding()
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
