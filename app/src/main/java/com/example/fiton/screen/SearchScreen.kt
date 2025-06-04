@@ -194,7 +194,7 @@ fun SearchScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(bottom = 50.dp), // 👈 Espacio para los FABs
+                        .padding(bottom = 60.dp), // 👈 Espacio para los FABs
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(exercisesState.value) { exercise ->

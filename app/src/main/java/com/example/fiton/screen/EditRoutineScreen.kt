@@ -2,7 +2,9 @@ package com.example.fiton.screen
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +34,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import androidx.compose.foundation.lazy.items
-
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,12 +61,18 @@ fun EditRoutineScreen(
     )
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showMinExerciseWarning by remember { mutableStateOf(false) }
 
     var showAddExerciseDialog by remember { mutableStateOf(false) }
     val allExercises = remember { exerciseRepository.getAll() }
 
     // Variable para generar IDs únicos temporales para nuevos ejercicios
     var nextTempId by remember { mutableStateOf(-1L) }
+
+    // Función para contar ejercicios activos (no eliminados)
+    fun contarEjerciciosActivos(): Int {
+        return ejercicios.count { !ejerciciosEliminadosIds.contains(it.id) }
+    }
 
     LaunchedEffect(rutinaId) {
         rutina = rutinaRepository.obtenerRutinaPorId(rutinaId)
@@ -119,6 +127,12 @@ fun EditRoutineScreen(
 
                 FloatingActionButton(
                     onClick = {
+                        // Validar que hay al menos un ejercicio activo antes de guardar
+                        if (contarEjerciciosActivos() == 0) {
+                            showMinExerciseWarning = true
+                            return@FloatingActionButton
+                        }
+
                         rutina?.let {
                             rutinaRepository.actualizarRutina(
                                 it.id,
@@ -248,7 +262,18 @@ fun EditRoutineScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text("Ejercicios", style = MaterialTheme.typography.titleMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Ejercicios", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "(${contarEjerciciosActivos()} activos)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (contarEjerciciosActivos() == 1) Color.Red else Color.Gray
+                    )
+                }
 
                 val scrollState = rememberScrollState()
 
@@ -260,6 +285,7 @@ fun EditRoutineScreen(
                     ejercicios.forEachIndexed { index, ejercicio ->
                         // Usar el ID único del ejercicio para verificar si está eliminado
                         val isEliminado = ejerciciosEliminadosIds.contains(ejercicio.id)
+                        val esUltimoActivo = contarEjerciciosActivos() == 1 && !isEliminado
 
                         var repeticiones by remember { mutableStateOf(ejercicio.repeticiones.toString()) }
                         var series by remember { mutableStateOf(ejercicio.series.toString()) }
@@ -271,7 +297,14 @@ fun EditRoutineScreen(
 
                         Card(modifier = Modifier
                             .fillMaxWidth()
-                            .alpha(if (isEliminado) 0.5f else 1f)) {
+                            .alpha(if (isEliminado) 0.5f else 1f)
+                            .then(
+                                if (esUltimoActivo) {
+                                    Modifier.border(2.dp, Color.Red.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                } else {
+                                    Modifier
+                                }
+                            )) {
                             Box {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Text(
@@ -282,6 +315,15 @@ fun EditRoutineScreen(
                                         "Grupo muscular: ${ejercicioInfo?.muscleGroup ?: "N/A"}",
                                         textDecoration = if (isEliminado) TextDecoration.LineThrough else TextDecoration.None
                                     )
+
+                                    if (esUltimoActivo) {
+                                        Text(
+                                            "⚠️ Último ejercicio activo",
+                                            color = Color.Red,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
 
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -358,7 +400,10 @@ fun EditRoutineScreen(
                                 IconButton(
                                     onClick = {
                                         if (!isEliminado) {
-                                            if (!ejerciciosEliminadosIds.contains(ejercicio.id)) {
+                                            // Si es el último ejercicio activo, mostrar advertencia
+                                            if (esUltimoActivo) {
+                                                showMinExerciseWarning = true
+                                            } else {
                                                 ejerciciosEliminadosIds.add(ejercicio.id)
                                             }
                                         } else {
@@ -369,7 +414,8 @@ fun EditRoutineScreen(
                                 ) {
                                     Icon(
                                         if (isEliminado) Icons.Default.Undo else Icons.Default.Close,
-                                        contentDescription = if (isEliminado) "Restaurar ejercicio" else "Eliminar ejercicio"
+                                        contentDescription = if (isEliminado) "Restaurar ejercicio" else "Eliminar ejercicio",
+                                        tint = if (esUltimoActivo) Color.Red.copy(alpha = 0.5f) else Color.White
                                     )
                                 }
                             }
@@ -405,45 +451,55 @@ fun EditRoutineScreen(
         if (showAddExerciseDialog) {
             AlertDialog(
                 onDismissRequest = { showAddExerciseDialog = false },
+                containerColor = Color(0xFF1E1E1E),
+                titleContentColor = Color.White,
+                textContentColor = Color.LightGray,
                 title = {
-                    Text(
-                        "Seleccionar ejercicio",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.FitnessCenter,
+                            contentDescription = null,
+                            tint = Color(0xFF90CAF9),
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Seleccionar ejercicio",
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 },
                 text = {
-                    // Lista scrollable para muchos ejercicios
                     LazyColumn(
                         modifier = Modifier
-                            .heightIn(max = 300.dp) // Limita la altura máxima para scroll
+                            .heightIn(max = 300.dp)
                     ) {
                         items(allExercises) { ejercicio ->
-                            TextButton(
-                                onClick = {
-                                    val nuevoEjercicio = RutinaModels.RutinaEjercicio(
-                                        id = nextTempId,
-                                        rutinaId = rutina?.id ?: 0L,
-                                        ejercicioId = ejercicio.id,
-                                        series = 3,
-                                        repeticiones = 10,
-                                        peso = 0.0,
-                                        anotaciones = ""
-                                    )
-                                    ejercicios = ejercicios + nuevoEjercicio
-                                    nextTempId--
-                                    showAddExerciseDialog = false
-                                },
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                                    .clickable {
+                                        val nuevoEjercicio = RutinaModels.RutinaEjercicio(
+                                            id = nextTempId,
+                                            rutinaId = rutina?.id ?: 0L,
+                                            ejercicioId = ejercicio.id,
+                                            series = 3,
+                                            repeticiones = 10,
+                                            peso = 0.0,
+                                            anotaciones = ""
+                                        )
+                                        ejercicios = ejercicios + nuevoEjercicio
+                                        nextTempId--
+                                        showAddExerciseDialog = false
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
                             ) {
                                 Text(
                                     text = "${ejercicio.muscleGroup} - ${ejercicio.name}",
                                     fontSize = 18.sp,
-                                    textAlign = TextAlign.Start,
-                                    modifier = Modifier.fillMaxWidth()
+                                    color = Color.White
                                 )
                             }
                             Divider(color = Color.Gray.copy(alpha = 0.3f), thickness = 0.5.dp)
@@ -453,15 +509,50 @@ fun EditRoutineScreen(
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { showAddExerciseDialog = false }) {
-                        Text("Cancelar")
+                        Text("Cancelar", color = Color(0xFF90CAF9), fontWeight = FontWeight.SemiBold)
                     }
-                },
-                containerColor = Color(0xFF1E1E1E),
-                titleContentColor = Color.White,
-                textContentColor = Color.LightGray,
+                }
             )
         }
 
+        // Diálogo de advertencia para ejercicio mínimo
+        if (showMinExerciseWarning) {
+            AlertDialog(
+                onDismissRequest = { showMinExerciseWarning = false },
+                containerColor = Color(0xFF1E1E1E),
+                titleContentColor = Color.White,
+                textContentColor = Color.LightGray,
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color.Red,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Ejercicio requerido")
+                    }
+                },
+                text = {
+                    Text(
+                        "Una rutina debe tener al menos un ejercicio. Agrega otro ejercicio antes de eliminar este.",
+                        textAlign = TextAlign.Center
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { showMinExerciseWarning = false }
+                    ) {
+                        Text("Entendido", color = Color(0xFF90CAF9), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            )
+        }
 
         if (showDeleteDialog) {
             Dialog(onDismissRequest = { showDeleteDialog = false }) {
@@ -474,63 +565,65 @@ fun EditRoutineScreen(
                     Column(
                         modifier = Modifier
                             .padding(24.dp)
-                            .widthIn(min = 280.dp, max = 360.dp)
+                            .widthIn(min = 280.dp, max = 360.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Título centrado
-                        Text(
-                            text = "¿Eliminar rutina?",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = Color.White,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color.Red,
+                            modifier = Modifier.size(48.dp)
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Texto descriptivo
+                        Text(
+                            text = "Eliminar rutina",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Text(
                             text = "Esta acción eliminará la rutina permanentemente. ¿Estás seguro de que deseas continuar?",
                             fontSize = 16.sp,
                             color = Color.LightGray,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            textAlign = TextAlign.Center
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Botones, con Cancelar a la izquierda y Eliminar a la derecha
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
                         ) {
-                            TextButton(onClick = { showDeleteDialog = false }) {
-                                Text(
-                                    text = "Cancelar",
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
+                            OutlinedButton(
+                                onClick = { showDeleteDialog = false },
+                                border = BorderStroke(1.dp, Color.Gray),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Text("Cancelar")
                             }
-                            TextButton(
+
+                            Button(
                                 onClick = {
                                     rutina?.let {
                                         rutinaRepository.eliminarRutina(it.id)
                                     }
                                     showDeleteDialog = false
                                     navController.popBackStack()
-                                }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)) // rojo fuerte
                             ) {
-                                Text(
-                                    text = "Eliminar",
-                                    color = Color.Red,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                Text("Eliminar", color = Color.White)
                             }
                         }
                     }
                 }
             }
         }
-
     }
 }

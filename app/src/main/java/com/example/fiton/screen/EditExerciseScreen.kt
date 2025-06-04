@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,6 +43,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.fiton.R
 import com.example.fiton.data.Exercise
 import com.example.fiton.data.ExerciseRepository
+import com.example.fiton.utiles.copyImageToInternalStorage
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,7 +110,11 @@ fun EditExerciseScreen(
             val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             galleryLauncher.launch(intent)
         } else {
-            Toast.makeText(context, "Se necesita permiso para acceder a la galería", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                context,
+                "Se necesita permiso para acceder a la galería",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -119,7 +125,11 @@ fun EditExerciseScreen(
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
 
-        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                permission
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             galleryLauncher.launch(intent)
         } else {
@@ -204,7 +214,9 @@ fun EditExerciseScreen(
                 label = { Text("Grupo muscular") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                modifier = Modifier.menuAnchor().fillMaxWidth()
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
             )
 
             ExposedDropdownMenu(
@@ -358,7 +370,11 @@ fun EditExerciseScreen(
                     if (imagePath != null) {
                         val file = File(imagePath!!)
                         if (!file.exists()) {
-                            Toast.makeText(context, "Error: La imagen no se guardó correctamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Error: La imagen no se guardó correctamente",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             return@FloatingActionButton
                         }
                     }
@@ -372,7 +388,11 @@ fun EditExerciseScreen(
                             imageUri = imagePath
                         )
                     )
-                    Toast.makeText(context, "Ejercicio actualizado correctamente", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Ejercicio actualizado correctamente",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     navController.popBackStack()
                 },
                 containerColor = Color(0xFFFF9800),
@@ -387,52 +407,74 @@ fun EditExerciseScreen(
         Dialog(onDismissRequest = { showDeleteDialog = false }) {
             Surface(
                 shape = MaterialTheme.shapes.medium,
-                tonalElevation = 6.dp
+                tonalElevation = 8.dp,
+                modifier = Modifier.padding(16.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(48.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Text(
-                        text = "¿Estás seguro de querer eliminar este ejercicio?",
-                        fontSize = 20.sp,
+                        text = "Eliminar ejercicio",
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "¿Estás seguro de que quieres eliminar este ejercicio? Esta acción no se puede deshacer.",
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center
                     )
 
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.spacedBy(
+                            12.dp,
+                            Alignment.CenterHorizontally
+                        )
                     ) {
-                        Button(
-                            onClick = {
-                                // Si hay una imagen asociada, intenta eliminarla
-                                if (!exercise?.imageUri.isNullOrEmpty()) {
-                                    try {
-                                        val file = File(exercise?.imageUri!!)
-                                        if (file.exists()) {
-                                            file.delete()
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
-
-                                repository.delete(exerciseId)
-                                Toast.makeText(context, "Ejercicio eliminado con éxito", Toast.LENGTH_SHORT).show()
-                                navController.popBackStack()
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                            modifier = Modifier.padding(end = 8.dp)
+                        OutlinedButton(
+                            onClick = { showDeleteDialog = false }
                         ) {
-                            Text("Eliminar", color = Color.White)
+                            Text("Cancelar")
                         }
 
                         Button(
-                            onClick = { showDeleteDialog = false },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                            onClick = {
+                                try {
+                                    exercise?.imageUri?.takeIf { it.isNotEmpty() }?.let {
+                                        File(it).takeIf { file -> file.exists() }?.delete()
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+
+                                repository.delete(exerciseId)
+                                Toast.makeText(
+                                    context,
+                                    "Ejercicio eliminado con éxito",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                navController.popBackStack()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                         ) {
-                            Text("Cancelar", color = Color.White)
+                            Text("Eliminar", color = Color.White)
                         }
                     }
                 }

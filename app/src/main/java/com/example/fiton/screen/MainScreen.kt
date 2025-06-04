@@ -306,25 +306,26 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
                 onDismissRequest = { menuExpanded = false },
                 confirmButton = {},
                 dismissButton = {},
+                containerColor = Color(0xFF1E1E1E),
+                shape = RoundedCornerShape(16.dp),
                 title = {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(start = 16.dp, top = 16.dp, end = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
                             text = "Selecciona una opción",
-                            fontSize = (titleTextSize.value * 0.8f).sp,
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontSize = (titleTextSize.value * 0.8f).sp,
+                                color = Color.White
+                            )
                         )
                         IconButton(
                             onClick = { menuExpanded = false },
-                            modifier = Modifier
-                                .size(28.dp)
-                                .offset(y = (-8).dp)
+                            modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
@@ -338,24 +339,22 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Button(
                             onClick = {
                                 menuExpanded = false
                                 navController.navigate("imc_screen")
                             },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF9800)
-                            ),
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
                         ) {
                             Text(
-                                "Calcular IMC",
-                                color = Color.White,
-                                fontSize = (titleTextSize.value * 0.62f).sp
+                                text = "Calcular IMC",
+                                fontSize = (titleTextSize.value * 0.65f).sp,
+                                color = Color.White
                             )
                         }
 
@@ -364,22 +363,18 @@ fun MainScreen(navController: NavController, modifier: Modifier = Modifier) {
                                 menuExpanded = false
                                 navController.navigate("ver_rendimiento")
                             },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF9800)
-                            ),
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
                         ) {
                             Text(
-                                "Ver rendimiento",
-                                color = Color.White,
-                                fontSize = (titleTextSize.value * 0.62f).sp
+                                text = "Ver rendimiento",
+                                fontSize = (titleTextSize.value * 0.65f).sp,
+                                color = Color.White
                             )
                         }
                     }
-                },
-                containerColor = Color(0xFF121212),
-                shape = RoundedCornerShape(16.dp)
+                }
             )
         }
     }

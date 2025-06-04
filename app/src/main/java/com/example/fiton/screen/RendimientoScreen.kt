@@ -772,12 +772,13 @@ fun BarChart(puntos: List<Float>, labels: List<String>) {
     val minValue = puntos.minOrNull() ?: 0f
     val maxValue = puntos.maxOrNull() ?: 0f
 
-    val (adjustedMinValue, adjustedMaxValue) = if (minValue == maxValue) {
-        val fixedPadding = 10f
-        Pair(minValue - fixedPadding, maxValue + fixedPadding)
+    // Modificación: Siempre usar 0 como valor mínimo
+    val adjustedMinValue = 0f
+    val adjustedMaxValue = if (maxValue <= 0f) {
+        10f // Si todos los valores son 0 o negativos, usar un valor máximo por defecto
     } else {
-        val paddingVertical = (maxValue - minValue) * 0.1f
-        Pair(minValue - paddingVertical, maxValue + paddingVertical)
+        val paddingVertical = maxValue * 0.1f
+        maxValue + paddingVertical
     }
 
     val rango = (adjustedMaxValue - adjustedMinValue).coerceAtLeast(1f)
@@ -860,18 +861,30 @@ fun BarChart(puntos: List<Float>, labels: List<String>) {
                         val x =
                             paddingLeft + espacioEntreBarraFinal + index * (anchoBarraFinal + espacioEntreBarraFinal)
                         val alturaBarra = ((valor - adjustedMinValue) / rango) * graphHeight
-                        val y = paddingTop + graphHeight - alturaBarra
+                        // Altura mínima visible para barras con valor 0
+                        val alturaBarraVisible = if (valor == 0f) {
+                            maxOf(alturaBarra, 8f) // Mínimo 8dp de altura para barras con valor 0
+                        } else {
+                            alturaBarra
+                        }
+                        val y = paddingTop + graphHeight - alturaBarraVisible
 
                         // Barra
+                        val colorBarra = if (valor == 0f) {
+                            Color(0xFFBDBDBD) // Color gris más claro para valores 0
+                        } else {
+                            Color(0xFFFF9800) // Color naranja para valores normales
+                        }
+
                         drawRoundRect(
-                            color = Color(0xFFFF9800),
+                            color = colorBarra,
                             topLeft = Offset(x, y),
-                            size = Size(anchoBarraFinal, alturaBarra),
+                            size = Size(anchoBarraFinal, alturaBarraVisible),
                             cornerRadius = CornerRadius(8f, 8f)
                         )
 
                         // Valor encima de la barra
-                        if (alturaBarra > 40) {
+                        if (alturaBarraVisible > 40) {
                             drawContext.canvas.nativeCanvas.apply {
                                 drawRoundRect(
                                     x + anchoBarraFinal / 2 - 45f,
