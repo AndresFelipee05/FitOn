@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,6 +44,7 @@ import com.example.fiton.data.ExerciseRepository
 import com.example.fiton.data.RutinaRepository
 import java.time.LocalDate
 import com.example.fiton.R
+import java.io.File
 
 data class ExerciseSelection(
     val exercise: Exercise,
@@ -416,10 +418,24 @@ fun CreateRoutineDetailScreen(
                                 }
 
                                 // Imagen del ejercicio
-                                val painter = if (!exercise.imageUri.isNullOrEmpty()) {
-                                    rememberAsyncImagePainter(exercise.imageUri)
-                                } else {
-                                    painterResource(id = R.drawable.ic_launcher_foreground)
+                                val painter: Painter = when {
+                                    // URL de internet
+                                    exercise.imageUri?.startsWith("http") == true -> {
+                                        rememberAsyncImagePainter(model = exercise.imageUri)
+                                    }
+                                    // Drawable (no contiene "/")
+                                    !exercise.imageUri.isNullOrEmpty() && !exercise.imageUri!!.contains("/") -> {
+                                        val resourceUri = "android.resource://com.example.fiton/drawable/${exercise.imageUri}"
+                                        rememberAsyncImagePainter(model = resourceUri)
+                                    }
+                                    // Archivo local
+                                    !exercise.imageUri.isNullOrEmpty() && File(exercise.imageUri!!).exists() -> {
+                                        rememberAsyncImagePainter(model = File(exercise.imageUri!!))
+                                    }
+                                    // Imagen por defecto
+                                    else -> {
+                                        painterResource(id = R.drawable.ic_launcher_foreground)
+                                    }
                                 }
 
                                 Image(

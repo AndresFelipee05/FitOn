@@ -174,12 +174,20 @@ fun ExerciseCard(exercise: Exercise, onClick: (Long) -> Unit) {
     val context = LocalContext.current
 
     val painter: Painter = when {
+        // Si es una URL de internet
         exercise.imageUri?.startsWith("http") == true -> {
             rememberAsyncImagePainter(model = exercise.imageUri)
         }
+        // Si no contiene "/" es un drawable
+        !exercise.imageUri.isNullOrEmpty() && !exercise.imageUri!!.contains("/") -> {
+            val resourceUri = "android.resource://com.example.fiton/drawable/${exercise.imageUri}"
+            rememberAsyncImagePainter(model = resourceUri)
+        }
+        // Si es un archivo local
         !exercise.imageUri.isNullOrEmpty() && File(exercise.imageUri).exists() -> {
             rememberAsyncImagePainter(model = File(exercise.imageUri!!))
         }
+        // Imagen por defecto
         else -> {
             painterResource(id = R.drawable.ic_launcher_foreground)
         }

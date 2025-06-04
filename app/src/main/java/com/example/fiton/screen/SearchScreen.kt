@@ -250,12 +250,20 @@ fun SearchScreen(
 @Composable
 fun ExerciseCardSearch(exercise: Exercise, onClick: (Long) -> Unit) {
     val painter: Painter = when {
+        // URL de internet
         exercise.imageUri?.startsWith("http") == true -> {
             rememberAsyncImagePainter(model = exercise.imageUri)
         }
-        !exercise.imageUri.isNullOrEmpty() && File(exercise.imageUri).exists() -> {
+        // Drawable (no contiene "/")
+        !exercise.imageUri.isNullOrEmpty() && !exercise.imageUri!!.contains("/") -> {
+            val resourceUri = "android.resource://com.example.fiton/drawable/${exercise.imageUri}"
+            rememberAsyncImagePainter(model = resourceUri)
+        }
+        // Archivo local
+        !exercise.imageUri.isNullOrEmpty() && File(exercise.imageUri!!).exists() -> {
             rememberAsyncImagePainter(model = File(exercise.imageUri!!))
         }
+        // Imagen por defecto
         else -> {
             painterResource(id = R.drawable.ic_launcher_foreground)
         }

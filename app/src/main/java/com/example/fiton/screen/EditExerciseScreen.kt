@@ -147,14 +147,22 @@ fun EditExerciseScreen(
 
             if (!loaded.imageUri.isNullOrEmpty()) {
                 imagePath = loaded.imageUri
-                // Verificar si el archivo existe
-                val file = File(loaded.imageUri!!)
-                if (file.exists()) {
-                    println("Imagen existente encontrada en: ${loaded.imageUri}")
-                    imageUri = Uri.fromFile(file)
+
+                // Si no contiene "/" es un drawable
+                if (!loaded.imageUri!!.contains("/")) {
+                    // Es un drawable - crear URI de recurso
+                    val resourceUri = "android.resource://com.example.fiton/drawable/${loaded.imageUri}"
+                    imageUri = Uri.parse(resourceUri)
+                    println("Imagen drawable encontrada: ${loaded.imageUri}")
                 } else {
-                    println("Advertencia: La imagen no existe en la ruta: ${loaded.imageUri}")
-                    // No establecer imageUri si el archivo no existe
+                    // Es un archivo local - verificar si existe
+                    val file = File(loaded.imageUri!!)
+                    if (file.exists()) {
+                        println("Imagen local encontrada: ${loaded.imageUri}")
+                        imageUri = Uri.fromFile(file)
+                    } else {
+                        println("Advertencia: La imagen no existe en la ruta: ${loaded.imageUri}")
+                    }
                 }
             }
         }
@@ -265,10 +273,15 @@ fun EditExerciseScreen(
                         Image(
                             painter = rememberAsyncImagePainter(
                                 model = if (imageChanged) {
-                                    imageUri // URI directa si es una imagen nueva
+                                    imageUri
                                 } else {
-                                    // Para imágenes existentes, usar File
-                                    File(imagePath!!)
+                                    if (imagePath?.contains("/") == false) {
+                                        // Es un drawable
+                                        "android.resource://com.example.fiton/drawable/$imagePath"
+                                    } else {
+                                        // Es un archivo local
+                                        imagePath?.takeIf { File(it).exists() }?.let { File(it) }
+                                    }
                                 }
                             ),
                             contentDescription = "Imagen del ejercicio",
@@ -364,19 +377,26 @@ fun EditExerciseScreen(
                 )
             }
 
+            // Reemplaza esta parte en el FloatingActionButton de "Guardar":
+
             FloatingActionButton(
                 onClick = {
-                    // Verificar que si hay imagen, exista el archivo
+                    // Verificar que si hay imagen, exista el archivo O sea un drawable
                     if (imagePath != null) {
-                        val file = File(imagePath!!)
-                        if (!file.exists()) {
-                            Toast.makeText(
-                                context,
-                                "Error: La imagen no se guardó correctamente",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@FloatingActionButton
+                        // Si no contiene "/" es un drawable (válido)
+                        if (imagePath!!.contains("/")) {
+                            // Es un archivo local - verificar si existe
+                            val file = File(imagePath!!)
+                            if (!file.exists()) {
+                                Toast.makeText(
+                                    context,
+                                    "Error: La imagen no se guardó correctamente",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@FloatingActionButton
+                            }
                         }
+                        // Si es drawable (no contiene "/"), no necesita validación adicional
                     }
 
                     repository.update(
